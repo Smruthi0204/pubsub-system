@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PubSub Dashboard</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+        .card { background: white; padding: 20px; margin: 10px; border-radius: 8px; display: inline-block; width: 150px; text-align: center; }
+        .number { font-size: 40px; font-weight: bold; }
+        .delivered { color: green; }
+        .permanent { color: darkred; }
+        .total { color: blue; }
+    </style>
+</head>
+<body>
+    <h2>PubSub Notification Dashboard</h2>
+    <div id="stats"></div>
+
+    <script>
+        fetch('/dashboard')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stats').innerHTML = `
+                    <div class="card"><div class="number total">${data.totalEvents}</div>Total Events</div>
+                    <div class="card"><div class="number delivered">${data.totalDelivered}</div>Delivered</div>
+                    <div class="card"><div class="number permanent">${data.totalPermanentlyFailed}</div>Permanently Failed</div>
+                `;
+            });
+    </script>
+</body>
+</html>
