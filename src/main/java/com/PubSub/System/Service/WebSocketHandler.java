@@ -24,8 +24,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void sendMessage(String subscriberName, String message) throws Exception {
         WebSocketSession session = sessions.get(subscriberName);
 
-        if (session != null && session.isOpen()) {
-            session.sendMessage(new TextMessage(message));
+        if (session == null || !session.isOpen()) {
+            throw new Exception("Subscriber not connected: " + subscriberName);
         }
+        session.sendMessage(new TextMessage(message));
     }
 }

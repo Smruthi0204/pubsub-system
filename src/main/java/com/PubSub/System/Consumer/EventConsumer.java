@@ -45,14 +45,14 @@ public class EventConsumer {
                             webSocketHandler.sendMessage(s.getName(), event.getPayload());
                             tracking.setStatus("Delivered");
                             deliveryTrackingRepo.save(tracking);
-                            return;
+                            break;
                         } catch (Exception e) {
                             tracking.setRetryCount(i+1);
                             Thread.sleep(2000);
                             if(i==2){
                             tracking.setStatus("Permanently Failed");
                             deliveryTrackingRepo.save(tracking);
-                            return;
+                            break;
                         }
                             tracking.setStatus("Failed");
                             deliveryTrackingRepo.save(tracking);
