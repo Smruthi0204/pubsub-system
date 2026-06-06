@@ -52,172 +52,98 @@ This project is a notification system where applications can register as publish
 
 ---
 
-## Example Requests
+## Database Design
 
-### Register Publisher
+4 normalized tables are designed to track every event and every delivery attempt independently.
 
-```http
-POST /api/pubregister
-```
+| Table | Purpose |
+|---------|---------|
+| `publisher` | Stores registered publisher identities |
+| `subscriber` | Stores subscriber details including delivery preference and endpoint |
+| `subscriber_topics` | Separate join table — one subscriber can subscribe to multiple topics |
+| `event` | Every published event with topic, payload, publisher reference and timestamp |
+| `delivery_tracking` | One row per subscriber per event — tracks status, retry count and attempt time |
 
-```json
-{
-  "name": "App A",
-  "emailId": "appa@gmail.com"
-}
-```
+The `delivery_tracking` table is the core of observability in this system. It answers:
 
-### Register Subscriber
+- Who received what
+- When it was delivered
+- How many attempts it took
+- Whether it ultimately succeeded or failed
 
-```http
-POST /api/subregister
-```
-
-```json
-{
-  "name": "Sub A",
-  "topics": ["orders", "payments"],
-  "deliverytype": "webhook",
-  "endpoint": "https://webhook.site/your-unique-url",
-  "emailId": "suba@gmail.com"
-}
-```
-
-### Publish Event
-
-```http
-POST /api/events
-```
-
-```json
-{
-  "topic": "orders",
-  "payload": "Order placed for item X",
-  "publisher": {
-    "id": "your-publisher-uuid"
-  }
-}
-```
+All of this is queryable with simple SQL.
 
 ---
 
-## Setup and Run Locally
+## Event Flow
 
-### Prerequisites
+**1. Publisher Publishes an Event**
+- Publisher sends `POST /api/events` with topic, payload, and publisher ID
+- Event is persisted to the `event` table in PostgreSQL
+- Event is serialized to JSON and pushed to AWS SQS
 
-- Java 17
-- Maven
-- PostgreSQL
-- Docker Desktop
+**2. Event Queued in AWS SQS**
+- Message is durably stored in SQS — survives consumer downtime
+- Publisher is immediately free — no blocking, no waiting for delivery
 
-### 1. Clone the Repository
+**3. Consumer Picks Up the Event**
+- `@SqsListener` continuously polls the SQS queue
+- Incoming message is deserialized from JSON back to an `Event` object
+- SQS applies a visibility timeout — message is hidden from other consumers during processing
 
-```bash
-git clone https://github.com/your-username/pubsub-system.git
-cd pubsub-system
-```
+**4. Subscriber Resolution**
+- `subscriber_topics` table is queried to find all subscribers matching the event topic
+- A single event can fan out to multiple subscribers
+- Each subscriber is processed independently
 
-### 2. Create PostgreSQL Database
+**5. Delivery by Channel**
+- `webhook` → HTTP POST to the subscriber's registered URL via `RestTemplate`
+- `email` → Notification sent via Gmail SMTP using `JavaMailSender`
+- `websocket` → Payload pushed directly through the subscriber's active `WebSocketSession`
 
-```sql
-CREATE DATABASE pubsub_db;
-```
+**6. Retry Logic**
+- Each delivery is attempted up to 3 times on failure
+- A 2-second delay is applied between retry attempts
+- After 3 consecutive failures, status is set to `Permanently Failed` and no further attempts are made
 
-### 3. Create application.properties
+**7. Delivery Tracking**
+- A record is written to the `delivery_tracking` table after every attempt — success or failure
+- Captures event reference, subscriber reference, delivery status, retry count, and timestamp
+- Provides a complete audit trail of every delivery in the system
 
-Create:
+**8. Dashboard Visibility**
+- All delivery statuses are aggregated and exposed at `GET /dashboard.html`
+- Displays total delivered, failed, and permanently failed counts in real time
+- System health is visible at a glance — no database access required
 
-```text
-src/main/resources/application.properties
-```
-
-```properties
-spring.application.name=System
-server.port=8081
-
-spring.datasource.url=jdbc:postgresql://localhost:5432/pubsub_db
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-spring.mail.host=smtp.gmail.com
-spring.mail.port=587
-spring.mail.username=your_gmail
-spring.mail.password=your_app_password
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-
-spring.cloud.aws.credentials.access-key=your_access_key
-spring.cloud.aws.credentials.secret-key=your_secret_key
-spring.cloud.aws.region.static=us-east-1
-```
-
-### 4. Run with Docker
-
-```bash
-./mvnw clean package -DskipTests
-docker compose up --build
-```
-
-### 5. Access the Application
-
-| Service | URL |
-|----------|----------|
-| API | http://localhost:8081 |
-| Dashboard | http://localhost:8081/dashboard.html |
+**9. SQS Acknowledgement**
+- On successful processing → SQS automatically deletes the message from the queue
+- On unhandled exception → message becomes visible again after visibility timeout and is retried by SQS
+- Guarantees at-least-once delivery — no message is silently dropped
 
 ---
 
-## Deploy on AWS EC2
+## Design Decisions
 
-### Prerequisites
+**Why AWS SQS over an in-memory queue?**
+An in-memory queue loses all pending events if the application crashes. SQS persists messages durably — nothing is lost regardless of consumer state. It also fully decouples the publisher from the consumer, provides built-in retry via visibility timeout, and scales independently on both sides without any custom infrastructure.
 
-- AWS account (Free Tier)
-- EC2 instance (t2.micro, Ubuntu 22.04)
-- Security group with ports 22 and 8081 open
-- AWS SQS queue named `pubsub-events`
-- IAM user with `AmazonSQSFullAccess` permissions
+**Why three delivery channels?**
+Each channel serves a fundamentally different type of subscriber. Webhook targets backend servers that expose a URL. Email targets humans who want inbox notifications. WebSocket targets live browser or mobile clients that have no URL — they need the server to push through a persistent connection. Supporting all three makes the system useful across real-world integration scenarios.
 
-### 1. SSH into EC2
+**Why a separate delivery_tracking table?**
+One event can be delivered to many subscribers, each with its own status, retry count, and timestamp. Storing this on the event itself would require complex nested structures. A separate normalized table keeps the schema clean and makes querying straightforward — failed deliveries, retry history, per-subscriber audit trails — all simple SQL.
 
-```bash
-ssh -i "your-key.pem" ubuntu@your-ec2-ip
-```
+---
 
-### 2. Install Docker
+## Future Improvements
 
-```bash
-sudo apt update
-sudo apt install docker.io docker-compose -y
+- **Dead Letter Queue (DLQ)** — Route permanently failed messages to a dedicated SQS Dead Letter Queue for inspection and reprocessing instead of discarding them after the final retry attempt.
 
-sudo systemctl start docker
-sudo usermod -aG docker ubuntu
-```
+- **JWT Authentication** — Secure publisher and subscriber APIs with JWT-based authentication and authorization to prevent unauthorized event publishing and subscription registration.
 
-### 3. Clone the Repository
+- **Rate Limiting** — Apply per-publisher rate limits to protect the system from abuse, prevent queue flooding, and ensure fair resource usage.
 
-```bash
-git clone https://github.com/your-username/pubsub-system.git
-cd pubsub-system
-```
+- **Payload Filtering** — Extend topic-based subscriptions with payload-based filtering, allowing subscribers to receive only events matching specific criteria.
 
-### 4. Configure application.properties
-
-```bash
-nano src/main/resources/application.properties
-```
-
-### 5. Start the Application
-
-```bash
-sudo docker compose up --build
-```
-
-### 6. Access the Application
-
-| Service | URL |
-|----------|----------|
-| API | http://your-ec2-ip:8081 |
-| Dashboard | http://your-ec2-ip:8081/dashboard.html |
+---
