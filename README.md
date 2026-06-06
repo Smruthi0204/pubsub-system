@@ -28,7 +28,8 @@ This project is a notification system where applications can register as publish
 - Automatic retry logic with up to 3 attempts per failed delivery
 - Delivery status tracking in PostgreSQL
 - Simple dashboard showing delivery statistics
-- Fully Dockerized and deployed on AWS EC2
+- Containerized using Docker and Docker Compose
+- Deployed on AWS EC2 cloud infrastructure
 
 ---
 
@@ -119,7 +120,15 @@ All of this is queryable with simple SQL.
 **9. SQS Acknowledgement**
 - On successful processing → SQS automatically deletes the message from the queue
 - On unhandled exception → message becomes visible again after visibility timeout and is retried by SQS
-- Guarantees at-least-once delivery — no message is silently dropped
+
+---
+
+## Deployment
+
+- Containerized using Docker with a multi-stage build
+- PostgreSQL and application services orchestrated using Docker Compose
+- Deployed on AWS EC2 (Ubuntu)
+- AWS SQS used as the managed message broker
 
 ---
 
