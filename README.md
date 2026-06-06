@@ -5,7 +5,7 @@ This project is a notification system where applications can register as publish
 ---
 
 ## Demo
-[View Complete Demo Walkthrough](Demo.pdf)
+[View Complete Demo Walkthrough](demo.pdf)
 
 ## Tech Stack
 
