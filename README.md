@@ -1,6 +1,6 @@
 # Distributed Pub/Sub Notification Service
 
-This project is a notification system where applications can register as publishers or subscribers. Publishers push events to a REST API, events are queued in AWS SQS, and subscribers receive them in real-time via WebSocket, Email, or Webhook. Includes retry logic, delivery status tracking, and a live dashboard.
+This project is a notification service system where applications can register as publishers or subscribers. Publishers push events to a REST API, events are queued in AWS SQS, and subscribers receive them in real-time via WebSocket, Email, or Webhook as registered.This Includes retry logic, delivery status tracking, and a live dashboard to show delivery stats.
 
 ---
 
