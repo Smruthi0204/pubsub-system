@@ -7,16 +7,18 @@ This project is a notification service system where applications can register as
 ## Demo
 [View Complete Demo Walkthrough](demo.pdf)
 
+---
+
 ## Tech Stack
 
-![Java](https://img.shields.io/badge/Java-17-orange?style=flat&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-green?style=flat&logo=springboot)
-![AWS SQS](https://img.shields.io/badge/AWS%20SQS-Queue-yellow?style=flat&logo=amazonsqs)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=flat&logo=postgresql)
-![Docker](https://img.shields.io/badge/Docker-Containerized-blue?style=flat&logo=docker)
-![AWS EC2](https://img.shields.io/badge/AWS%20EC2-Deployed-orange?style=flat&logo=amazonec2)
-![WebSocket](https://img.shields.io/badge/WebSocket-RealTime-purple?style=flat)
-![JavaMail](https://img.shields.io/badge/JavaMail-SMTP-red?style=flat)
+![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-green?style=for-the-badge&logo=springboot)
+![AWS SQS](https://img.shields.io/badge/AWS%20SQS-Queue-yellow?style=for-the-badge&logo=amazonsqs)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?style=for-the-badge&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue?style=for-the-badge&logo=docker)
+![AWS EC2](https://img.shields.io/badge/AWS%20EC2-Deployed-orange?style=for-the-badge&logo=amazonec2)
+![WebSocket](https://img.shields.io/badge/WebSocket-RealTime-purple?style=for-the-badge)
+![JavaMail](https://img.shields.io/badge/JavaMail-SMTP-red?style=for-the-badge)
 
 ---
 
