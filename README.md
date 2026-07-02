@@ -4,11 +4,6 @@ This project is a notification service system where applications can register as
 
 ---
 
-## Demo
-[View Complete Demo Walkthrough](demo.pdf)
-
----
-
 ## Tech Stack
 
 ![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)
@@ -125,6 +120,11 @@ All of this is queryable with simple SQL.
 **9. SQS Acknowledgement**
 - On successful processing → SQS automatically deletes the message from the queue
 - On unhandled exception → message becomes visible again after visibility timeout and is retried by SQS
+
+---
+
+## Demo
+[View Complete Demo Walkthrough](demo.pdf)
 
 ---
 
